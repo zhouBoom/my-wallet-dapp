@@ -2,7 +2,7 @@
 // 实现功能：连接钱包、断开钱包、显示钱包地址
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import { Button, Menu, MenuItem } from "@mui/material";
+import { Button, Menu, MenuItem, Snackbar } from "@mui/material";
 
 const WalletConnector = () => {
   const [account, setAccount] = useState<string | null>(null);
@@ -16,20 +16,21 @@ const WalletConnector = () => {
       try {
         const accounts = await provider.send("eth_requestAccounts", []);
         console.log("accounts", accounts);
+        showSnackbar("连接钱包成功, 已连接: " + accounts[0]);
         setAccount(accounts[0]);
         setIsButtonDisabled(false); // 连接成功，启用按钮
       } catch (error) {
         console.error("Error connecting to wallet:", error);
         if (error.code === 4001) {
-          alert("您已拒绝连接钱包，请重试。");
+          showSnackbar("您已拒绝连接钱包，请重试。");
         } else {
-          alert("连接钱包失败，请重试或检查您的钱包设置。");
+          showSnackbar("连接钱包失败，请重试或检查您的钱包设置。");
         }
         setAccount(null); // 重置状态
         setIsButtonDisabled(true); // 禁用按钮
       }
     } else {
-      alert("MetaMask is not installed!");
+      showSnackbar("MetaMask is not installed!");
     }
   };
 
@@ -41,20 +42,15 @@ const WalletConnector = () => {
     setAnchorEl(null); // 关闭菜单
   };
 
-  const deleteCookie = (name: string) => {
-    document.cookie = `${name}=; Max-Age=0; path=/;`; // 删除 cookie
-  };
-
   const handleDisconnect = (clearUserStatus: boolean) => {
     setAccount(null); // 清除账户状态
     setIsButtonDisabled(false); // 启用连接按钮
 
     if (clearUserStatus) {
       // 清除用户状态的逻辑
-      deleteCookie("selectWallet"); // 清除 selectWallet cookie
-      alert("已断开连接并清除用户状态");
+      showSnackbar("已断开连接并清除用户状态");
     } else {
-      alert("已断开连接");
+      showSnackbar("已断开连接");
     }
     handleMenuClose(); // 关闭菜单
   };
@@ -63,6 +59,20 @@ const WalletConnector = () => {
     setIsButtonDisabled(false); // 启用按钮
     connectWallet(); // 再次尝试连接
   };
+
+  // 设置一个弹窗通知框
+  const showSnackbar = (message: string) => {
+    setSnackbarMessage(message);
+    setSnackbarOpen(true);
+  }
+
+  const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<string>("");
+
+  // 关闭弹窗
+  const closeSnackbar = () => {
+    setSnackbarOpen(false);
+  }
 
   useEffect(() => {
     // 监听账户变化
@@ -119,6 +129,12 @@ const WalletConnector = () => {
           重试连接
         </Button>
       )}
+      {/* 弹窗通知框 */}
+      <Snackbar
+        open={snackbarOpen}
+        onClose={closeSnackbar}
+        message={snackbarMessage}
+      />
     </div>
   );
 }
